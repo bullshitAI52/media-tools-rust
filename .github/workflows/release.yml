@@ -1,0 +1,57 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      
+    - name: Build Release
+      run: cargo build --release --verbose
+      
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p dist
+        cp target/release/whisper_app dist/whisper_app_mac
+        cp target/release/media_cutter dist/media_cutter_mac
+        
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-binaries
+        path: dist/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      
+    - name: Build Release
+      run: cargo build --release --verbose
+      
+    - name: Prepare Artifacts
+      run: |
+        mkdir dist
+        copy target\release\whisper_app.exe dist\whisper_app.exe
+        copy target\release\media_cutter.exe dist\media_cutter.exe
+        
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-binaries
+        path: dist/
