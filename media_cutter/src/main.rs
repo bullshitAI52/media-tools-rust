@@ -22,6 +22,7 @@ struct MediaCutterApp {
     // Status
     log: String,
     reencode_enabled: bool,
+    mute_enabled: bool,
     
     enc_crf: String,
     enc_preset: String,
@@ -51,6 +52,7 @@ impl Default for MediaCutterApp {
             deepseek_prompt: "提取精彩片段".to_owned(),
             log: "就绪。".to_owned(),
             reencode_enabled: false,
+            mute_enabled: false,
             enc_crf: "23".to_owned(),
             enc_preset: "medium".to_owned(),
             trim_head: "0".to_owned(),
@@ -235,6 +237,7 @@ impl eframe::App for MediaCutterApp {
                      let head_s: f64 = self.trim_head.parse().unwrap_or(0.0);
                      let tail_s: f64 = self.trim_tail.parse().unwrap_or(0.0);
                      let reencode = self.reencode_enabled;
+                     let mute = self.mute_enabled;
                      let crf = self.enc_crf.clone();
                      let preset = self.enc_preset.clone();
                      
@@ -261,7 +264,7 @@ impl eframe::App for MediaCutterApp {
                                  let output_name = format!("{}/trimmed_output.mp4", output_dir);
                                  self.log(&format!("剪辑范围: {} -> {}", start_str, end_str));
                                  
-                                 match VideoCutter::cut_segment(&input, &start_str, &end_str, &output_name, reencode, &crf, &preset) {
+                                 match VideoCutter::cut_segment(&input, &start_str, &end_str, &output_name, reencode, &crf, &preset, mute) {
                                      Ok(_) => self.log(&format!("✅ 剪辑完成: {}", output_name)),
                                      Err(e) => self.log(&format!("❌ 剪辑失败: {}", e)),
                                  }
@@ -361,6 +364,7 @@ impl eframe::App for MediaCutterApp {
             // Actions
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.reencode_enabled, "精准切割 (重新编码)");
+                ui.checkbox(&mut self.mute_enabled, "🔇 去除音频");
                 
                 if self.reencode_enabled {
                     ui.label("CRF:");
@@ -390,6 +394,7 @@ impl eframe::App for MediaCutterApp {
                      let crf = self.enc_crf.clone();
                      let preset = self.enc_preset.clone();
                      let template = self.output_template.clone();
+                     let mute = self.mute_enabled;
                      
                      for (i, seg) in self.segments.iter().enumerate() {
                          let filename = if template.contains("{}") {
@@ -406,7 +411,8 @@ impl eframe::App for MediaCutterApp {
                              &out_name, 
                              self.reencode_enabled,
                              &crf,
-                             &preset
+                             &preset,
+                             mute
                          ) {
                              Ok(_) => logs.push(format!("片段 {} 已保存。", i)),
                              Err(e) => logs.push(format!("片段 {} 错误: {}", i, e)),

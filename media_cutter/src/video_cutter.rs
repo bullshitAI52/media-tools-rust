@@ -5,21 +5,28 @@ use std::path::Path;
 pub struct VideoCutter;
 
 impl VideoCutter {
-    pub fn cut_segment(input: &str, start: &str, end: &str, output: &str, reencode: bool, crf: &str, preset: &str) -> Result<()> {
+    pub fn cut_segment(input: &str, start: &str, end: &str, output: &str, reencode: bool, crf: &str, preset: &str, mute: bool) -> Result<()> {
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-y")
            .arg("-i").arg(input)
            .arg("-ss").arg(start)
            .arg("-to").arg(end);
            
+        if mute {
+            cmd.arg("-an");
+        }
+
         if !reencode {
             cmd.arg("-c").arg("copy");
         } else {
             // Re-encode with user params
             cmd.arg("-c:v").arg("libx264")
                .arg("-crf").arg(crf)
-               .arg("-preset").arg(preset)
-               .arg("-c:a").arg("aac");
+               .arg("-preset").arg(preset);
+               
+            if !mute {
+                cmd.arg("-c:a").arg("aac");
+            }
         }
 
         let status = cmd.arg(output).status()?;
